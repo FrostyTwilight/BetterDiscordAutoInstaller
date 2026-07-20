@@ -3,6 +3,7 @@ name: Release
 on:
   push:
     tags: ['v*']
+  workflow_dispatch:
 
 permissions:
   contents: write
@@ -23,21 +24,34 @@ jobs:
       - name: Build
         run: dotnet build BetterDiscordInstaller/BetterDiscordInstaller.csproj -c Release --no-restore
 
+      - name: Verify Build
+        shell: pwsh
+        run: |
+          $version = '${{ github.ref_name }}'
+          Write-Host "Version: $version"
+          $buildDir = 'BetterDiscordInstaller/bin/Release/net472'
+          $dll = Join-Path $buildDir 'BetterDiscordInstaller.dll'
+          $config = Join-Path $buildDir 'Update.exe.config'
+          if (-not (Test-Path $dll)) { throw "Missing build output: $dll" }
+          if (-not (Test-Path $config)) { throw "Missing build output: $config" }
+          Write-Host "All build outputs verified."
+
       - name: Package
         shell: pwsh
         run: |
+          $version = '${{ github.ref_name }}'
           $staging = 'release'
           $buildDir = 'BetterDiscordInstaller/bin/Release/net472'
           New-Item -ItemType Directory -Path $staging -Force
           Copy-Item "$buildDir/BetterDiscordInstaller.dll" $staging
           Copy-Item "$buildDir/Update.exe.config" $staging
-          Compress-Archive -Path "$staging/*" -DestinationPath BetterDiscordInstaller.zip
+          Compress-Archive -Path "$staging/*" -DestinationPath "BetterDiscordInstaller-$version.zip"
 
       - uses: actions/upload-artifact@v4
         with:
-          name: BetterDiscordInstaller
-          path: BetterDiscordInstaller.zip
+          name: BetterDiscordInstaller-${{ github.ref_name }}
+          path: BetterDiscordInstaller-${{ github.ref_name }}.zip
 
       - uses: softprops/action-gh-release@v2
         with:
-          files: BetterDiscordInstaller.zip
+          files: BetterDiscordInstaller-${{ github.ref_name }}.zip
