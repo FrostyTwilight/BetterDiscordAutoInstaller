@@ -2,6 +2,7 @@
 using System;
 using System.Diagnostics;
 using System.IO;
+using System.Linq;
 using System.Net;
 using System.Windows.Forms;
 
@@ -46,8 +47,12 @@ namespace BetterDiscordInstaller
             var root = Path.GetDirectoryName(discordPath);
             var bd_asar = Path.GetFullPath(Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.UserProfile), 
                 "AppData/Roaming/BetterDiscord/data/betterdiscord.asar"));
-            
-            var js_inject = Path.GetFullPath(Path.Combine(root, "modules/discord_desktop_core-1/discord_desktop_core/index.js"));
+
+            var paths = Directory.EnumerateDirectories(Path.Combine(root, "modules"), "discord_desktop_core*", SearchOption.TopDirectoryOnly);
+
+            var core_path = paths.First();
+
+            var js_inject = Path.GetFullPath(Path.Combine(core_path, "discord_desktop_core/index.js"));
 
             if(File.Exists(bd_asar) && File.Exists(js_inject))
             {
